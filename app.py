@@ -16,6 +16,46 @@ db.init_app(app)
 with app.app_context():
     db.create_all()
 
+    from flask_bcrypt import Bcrypt
+
+bcrypt = Bcrypt(app)
+
+
+@app.route('/signup', methods=['POST'])
+def signup():
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+
+    if not email or not password:
+        return jsonify({"error": "Email et mot de passe requis"}), 400
+
+    existing_user = User.query.filter_by(email=email).first()
+    if existing_user:
+        return jsonify({"error": "Cet email est déjà utilisé"}), 400
+
+    password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
+    new_user = User(email=email, password_hash=password_hash)
+
+    db.session.add(new_user)
+    db.session.commit()
+
+    return jsonify({"message": "Compte créé avec succès", "user_id": new_user.id}), 201
+
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+
+    user = User.query.filter_by(email=email).first()
+
+    if not user or not bcrypt.check_password_hash(user.password_hash, password):
+        return jsonify({"error": "Email ou mot de passe incorrect"}), 401
+
+    return jsonify({"message": "Connexion réussie", "user_id": user.id})
+
 @app.route('/')
 def home():
     return "Hello World - LinkShield backend fonctionne !"
