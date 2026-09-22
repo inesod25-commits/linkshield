@@ -8,6 +8,13 @@ load_dotenv()
 API_KEY = os.getenv("VT_API_KEY")
 
 app = Flask(__name__)
+from models import db, User, CheckHistory
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///linkshield.db'
+db.init_app(app)
+
+with app.app_context():
+    db.create_all()
 
 @app.route('/')
 def home():
