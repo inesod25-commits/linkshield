@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>LinkShield</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; background: #0f172a; color: #e2e8f0; }
+  h1 { color: #38bdf8; }
+  input, button { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; border-radius: 6px; border: 1px solid #334155; }
+  button { background: #38bdf8; color: #0f172a; font-weight: bold; cursor: pointer; border: none; }
+  button:hover { background: #0ea5e9; }
+  .card { background: #1e293b; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+  .result { padding: 15px; border-radius: 8px; margin-top: 15px; }
+  .vert { background: #14532d; }
+  .orange { background: #78350f; }
+  .rouge { background: #7f1d1d; }
+  #status { font-size: 14px; color: #94a3b8; }
+</style>
+</head>
+<body>
+
+<h1>🛡️ LinkShield</h1>
+
+<div class="card">
+  <h3>Connexion / Inscription</h3>
+  <input type="email" id="email" placeholder="Email">
+  <input type="password" id="password" placeholder="Mot de passe">
+  <button onclick="signup()">S'inscrire</button>
+  <button onclick="login()">Se connecter</button>
+  <p id="status">Non connecté</p>
+</div>
+
+<div class="card">
+  <h3>Vérifier un lien</h3>
+  <input type="text" id="urlInput" placeholder="https://exemple.com">
+  <button onclick="checkUrl()">Vérifier</button>
+  <div id="result"></div>
+</div>
+
+<div class="card">
+  <h3>Historique</h3>
+  <button onclick="loadHistory()">Rafraîchir l'historique</button>
+  <div id="history"></div>
+</div>
+
+<script>
+const API_URL = "http://127.0.0.1:5000";
+let userId = null;
+
+async function signup() {
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  const res = await fetch(`${API_URL}/signup`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({email, password})
+  });
+  const data = await res.json();
+  document.getElementById('status').innerText = data.message || data.error;
+}
+
+async function login() {
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  const res = await fetch(`${API_URL}/login`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({email, password})
+  });
+  const data = await res.json();
+  if (data.user_id) {
+    userId = data.user_id;
+    document.getElementById('status').innerText = `Connecté (user_id: ${userId})`;
+  } else {
+    document.getElementById('status').innerText = data.error;
+  }
+}
+
+async function checkUrl() {
+  if (!userId) { alert("Connecte-toi d'abord"); return; }
+  const url = document.getElementById('urlInput').value;
+  document.getElementById('result').innerHTML = "Vérification en cours...";
+  const res = await fetch(`${API_URL}/check-url`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({url, user_id: userId})
+  });
+  const data = await res.json();
+  document.getElementById('result').innerHTML = `
+    <div class="result ${data.color}">
+      <strong>${data.verdict.toUpperCase()}</strong> — score de risque: ${data.risk_score}%
+    </div>`;
+}
+
+async function loadHistory() {
+  if (!userId) { alert("Connecte-toi d'abord"); return; }
+  const res = await fetch(`${API_URL}/history/${userId}`);
+  const data = await res.json();
+  document.getElementById('history').innerHTML = data.map(h =>
+    `<p>${h.date} — ${h.url} — <b>${h.verdict}</b> (${h.risk_score}%)</p>`
+  ).join('');
+}
+</script>
+
+</body>
+</html>

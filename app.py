@@ -1,14 +1,17 @@
+
 import os
 import time
 import requests
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 from flask_bcrypt import Bcrypt
+from flask_cors import CORS
 
 load_dotenv()
 API_KEY = os.getenv("VT_API_KEY")
 
 app = Flask(__name__)
+CORS(app)
 
 from models import db, User, CheckHistory
 
